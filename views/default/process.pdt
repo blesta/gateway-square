@@ -1,0 +1,3 @@
+<a href="<?php echo $this->Html->ifSet($post_to); ?>" class="btn btn-info">
+    <i class="fa fa-credit-card" aria-hidden="true"></i> <?php $this->_('Square.buildprocess.submit'); ?>
+</a>
