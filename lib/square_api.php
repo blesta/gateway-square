@@ -111,8 +111,13 @@ class SquareApi
      * @param string $redirect_url Successful redirect URL
      * @return stdClass An object contaning the api response
      */
-    public function buildPayment($client_email, $line_items, $address = null, $transaction_id = null, $redirect_url = null)
-    {
+    public function buildPayment(
+        $client_email,
+        $line_items,
+        $address = null,
+        $transaction_id = null,
+        $redirect_url = null
+    ) {
         // Generate a unique ID
         $unique_id = uniqid();
 
@@ -122,13 +127,19 @@ class SquareApi
             $value['quantity'] = (string) $value['quantity'];
 
             // Remove all formating from the amount
-            $value['base_price_money']['amount'] = (int) strtr($value['base_price_money']['amount'], ['.' => '', ',' => '']);
+            $value['base_price_money']['amount'] = (int) strtr(
+                $value['base_price_money']['amount'],
+                ['.' => '', ',' => '']
+            );
 
             // Format line discounts
             if (isset($value['discounts'])) {
                 foreach ($value['discounts'] as $discount_key => $discount_value) {
                     // Remove all formating from the amount
-                    $discount_value['amount_money']['amount'] = (int) strtr($discount_value['amount_money']['amount'], ['.' => '', ',' => '']);
+                    $discount_value['amount_money']['amount'] = (int) strtr(
+                        $discount_value['amount_money']['amount'],
+                        ['.' => '', ',' => '']
+                    );
                     $value['discounts'][$discount_key] = $discount_value;
                 }
             }

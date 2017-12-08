@@ -21,7 +21,7 @@ class Square extends NonmerchantGateway
     /**
      * @var string The authors of this gateway
      */
-    private static $authors = [['name'=>'Phillips Data, Inc.','url'=>'http://www.blesta.com']];
+    private static $authors = [['name' => 'Phillips Data, Inc.','url' => 'http://www.blesta.com']];
 
     /**
      * @var array An array of meta data for this gateway
@@ -191,8 +191,8 @@ class Square extends NonmerchantGateway
      *      - name The local name of the country
      *  - country An array of country info including:
      *      - alpha2 The 2-character country code
-     *      - alpha3 The 3-cahracter country code
-     *      - name The english name of the country
+     *      - alpha3 The 3-character country code
+     *      - name The English name of the country
      *      - alt_name The local name of the country
      *  - zip The zip/postal code of the contact
      * @param float $amount The amount to charge this contact
@@ -245,7 +245,9 @@ class Square extends NonmerchantGateway
         $this->log($this->ifSet($_SERVER['REQUEST_URI']), serialize($params), 'input', true);
 
         // Send the request to the api
-        $redirect_url = Configure::get('Blesta.gw_callback_url') . Configure::get('Blesta.company_id') . '/square/?client_id=' . $contact_info['client_id'];
+        $redirect_url = Configure::get('Blesta.gw_callback_url')
+            . Configure::get('Blesta.company_id')
+            . '/square/?client_id=' . $contact_info['client_id'];
         $request = $api->buildPayment($client->email, $params, $contact_info, $invoices, $redirect_url);
 
         // Build the payment form
