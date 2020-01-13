@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/blesta/gateway-square.svg?branch=master)](https://travis-ci.org/blesta/gateway-square) [![Coverage Status](https://coveralls.io/repos/github/blesta/gateway-square/badge.svg?branch=master)](https://coveralls.io/github/blesta/gateway-square?branch=master)
 
-This is a merchant gateway for Blesta that integrates with [Square](https://www.squareup.com/).
+This is a nonmerchant gateway for Blesta that integrates with [Square](https://www.squareup.com/).
 
 ## Install the Gateway
 
