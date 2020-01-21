@@ -1,6 +1,7 @@
 <?php
 
 $lang['Square.name'] = 'Square';
+$lang['Square.description'] = 'Square, Inc. is a financial services, merchant services aggregator, and mobile payment company based in San Francisco, California. The have a strong consumer base in small businesses';
 $lang['Square.application_id'] = 'Application ID';
 $lang['Square.access_token'] = 'Access Token';
 $lang['Square.location_id'] = 'Location ID';
