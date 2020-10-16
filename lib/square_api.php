@@ -84,7 +84,7 @@ class SquareApi
             curl_setopt($ch, CURLOPT_POST, true);
 
             if (!empty($params)) {
-                curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($params));
+                curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($params));
             }
         }
 
@@ -109,7 +109,7 @@ class SquareApi
      * @param string $address The client shipping address
      * @param string $transaction_id The order transaction id
      * @param string $redirect_url Successful redirect URL
-     * @return stdClass An object contaning the api response
+     * @return stdClass An object containing the api response
      */
     public function buildPayment(
         $client_email,
@@ -126,7 +126,7 @@ class SquareApi
             // Force string format for quantity
             $value['quantity'] = (string) $value['quantity'];
 
-            // Remove all formating from the amount
+            // Remove all formatting from the amount
             $value['base_price_money']['amount'] = (int) strtr(
                 $value['base_price_money']['amount'],
                 ['.' => '', ',' => '']
@@ -135,7 +135,7 @@ class SquareApi
             // Format line discounts
             if (isset($value['discounts'])) {
                 foreach ($value['discounts'] as $discount_key => $discount_value) {
-                    // Remove all formating from the amount
+                    // Remove all formatting from the amount
                     $discount_value['amount_money']['amount'] = (int) strtr(
                         $discount_value['amount_money']['amount'],
                         ['.' => '', ',' => '']
@@ -149,13 +149,18 @@ class SquareApi
         }
 
         // Build payment parameters array
+        $idempotency_key = !empty($transaction_id) ? $transaction_id : $unique_id;
         $params = [
             'redirect_url' => $redirect_url,
-            'idempotency_key' => !empty($transaction_id) ? $transaction_id : $unique_id,
+            'idempotency_key' => $idempotency_key,
             'ask_for_shipping_address' => isset($address),
             'order' => [
-                'reference_id' => !empty($transaction_id) ? $transaction_id : $unique_id,
-                'line_items' => $line_items
+                'idempotency_key' => $idempotency_key,
+                'order' => [
+                    'reference_id' => $idempotency_key,
+                    'location_id' => $this->location_id,
+                    'line_items' => $line_items
+                ],
             ],
             'pre_populate_buyer_email' => $client_email
         ];
@@ -181,7 +186,7 @@ class SquareApi
      * Retrieves details for a single transaction.
      *
      * @param string $transaction_id The transaction id
-     * @return stdClass An object contaning the transaction details
+     * @return stdClass An object containing the transaction details
      */
     public function getTransaction($transaction_id)
     {
@@ -192,7 +197,7 @@ class SquareApi
      * Retrieves details for a order.
      *
      * @param string $order_id The order id
-     * @return stdClass An object contaning the order details
+     * @return stdClass An object containing the order details
      */
     public function getOrder($order_id)
     {
