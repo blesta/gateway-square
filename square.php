@@ -186,15 +186,15 @@ class Square extends NonmerchantGateway
         // Build the payment request
         $params = [
             [
-                'name' => $this->ifSet($options['description']),
+                'name' => (isset($options['description']) ? $options['description'] : null),
                 'quantity' => 1,
                 'base_price_money' => [
-                    'amount' => $this->ifSet($amount),
-                    'currency' => $this->ifSet($this->currency)
+                    'amount' => (isset($amount) ? $amount : null),
+                    'currency' => (isset($this->currency) ? $this->currency : null)
                 ]
             ]
         ];
-        $this->log($this->ifSet($_SERVER['REQUEST_URI']), serialize($params), 'input', true);
+        $this->log((isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : null), serialize($params), 'input', true);
 
         // Send the request to the api
         $redirect_url = Configure::get('Blesta.gw_callback_url')
@@ -205,12 +205,12 @@ class Square extends NonmerchantGateway
         // Build the payment form
         try {
             if (!isset($request->errors)) {
-                $this->log($this->ifSet($_SERVER['REQUEST_URI']), serialize($request), 'output', true);
+                $this->log((isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : null), serialize($request), 'output', true);
 
                 return $this->buildForm($request->checkout->checkout_page_url);
             } else {
                 // The api has been responded with an error, set the error
-                $this->log($this->ifSet($_SERVER['REQUEST_URI']), serialize($request), 'output', false);
+                $this->log((isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : null), serialize($request), 'output', false);
                 $this->Input->setErrors(
                     ['api' => ['response' => $request->errors[0]->detail]]
                 );
@@ -268,7 +268,7 @@ class Square extends NonmerchantGateway
         $api = new SquareApi($this->meta['application_id'], $this->meta['access_token'], $this->meta['location_id']);
 
         // Get invoices
-        $invoices = $this->ifSet($get['referenceId']);
+        $invoices = (isset($get['referenceId']) ? $get['referenceId'] : null);
 
         // Get the transaction details
         $response = $api->getTransaction($get['transactionId']);
@@ -308,19 +308,19 @@ class Square extends NonmerchantGateway
         }
 
         // Log response
-        $this->log($this->ifSet($_SERVER['REQUEST_URI']), serialize($get), 'output', $return_status);
+        $this->log((isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : null), serialize($get), 'output', $return_status);
 
         // Get payment details
         $amount = number_format(($order->total_money->amount / 100), 2, '.', '');
         $currency = $order->total_money->currency;
 
         return [
-            'client_id' => $this->ifSet($get['client_id']),
+            'client_id' => (isset($get['client_id']) ? $get['client_id'] : null),
             'amount' => $amount,
             'currency' => $currency,
             'status' => $status,
             'reference_id' => null,
-            'transaction_id' => $this->ifSet($get['transactionId']),
+            'transaction_id' => (isset($get['transactionId']) ? $get['transactionId'] : null),
             'invoices' => $this->unserializeInvoices($invoices)
         ];
     }
@@ -349,7 +349,7 @@ class Square extends NonmerchantGateway
         $api = new SquareApi($this->meta['application_id'], $this->meta['access_token'], $this->meta['location_id']);
 
         // Get invoices
-        $invoices = $this->ifSet($get['referenceId']);
+        $invoices = (isset($get['referenceId']) ? $get['referenceId'] : null);
 
         // Get the transaction details
         $response = $api->getTransaction($get['transactionId']);
@@ -360,12 +360,12 @@ class Square extends NonmerchantGateway
         $currency = $order->total_money->currency;
 
         return [
-            'client_id' => $this->ifSet($get['client_id']),
+            'client_id' => (isset($get['client_id']) ? $get['client_id'] : null),
             'amount' => $amount,
             'currency' => $currency,
             'status' => 'approved', // we wouldn't be here if it weren't, right?
             'reference_id' => null,
-            'transaction_id' => $this->ifSet($get['transactionId']),
+            'transaction_id' => (isset($get['transactionId']) ? $get['transactionId'] : null),
             'invoices' => $this->unserializeInvoices($invoices)
         ];
     }
