@@ -1,5 +1,5 @@
 {
-    "version": "2.0.0",
+    "version": "2.0.1",
     "name": "Square.name",
     "description": "Square.description",
     "authors": [
@@ -13,5 +13,9 @@
         "GBP",
         "USD"
     ],
-    "signup_url": "https://squareup.com/signup"
+    "signup_url": "https://squareup.com/signup",
+    "logo": {
+        "light": "views/default/images/logo.svg",
+        "dark": "views/default/images/logo-dark.svg"
+    }
 }
