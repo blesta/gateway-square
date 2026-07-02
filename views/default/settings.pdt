@@ -17,3 +17,21 @@
     $this->Form->fieldText('location_id', (isset($meta['location_id']) ? $meta['location_id'] : null), ['id' => 'location_id', 'class' => 'form-control']);
     ?>
 </div>
+<div class="mb-3">
+    <label for="webhook_signature_key" class="form-label">
+        <?php $this->_('Square.webhook_signature_key'); ?>
+        <i class="bi bi-info-circle ms-1" data-bs-toggle="tooltip" data-bs-placement="top"
+           title="<?php echo $this->Html->safe($this->_('Square.!tooltip.webhook_signature_key', true)); ?>"></i>
+    </label>
+    <?php
+    $this->Form->fieldText('webhook_signature_key', (isset($meta['webhook_signature_key']) ? $meta['webhook_signature_key'] : null), ['id' => 'webhook_signature_key', 'class' => 'form-control']);
+    ?>
+</div>
+
+<div class="title_row">
+    <h3><?php $this->_('Square.webhook'); ?></h3>
+</div>
+<div class="pad">
+    <p><?php $this->_('Square.webhook_note'); ?></p>
+    <code><?php echo Configure::get('Blesta.gw_callback_url') . Configure::get('Blesta.company_id') . '/square/'; ?></code>
+</div>

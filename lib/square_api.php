@@ -205,31 +205,28 @@ class SquareApi
     }
 
     /**
-     * Retrieves details for a single transaction.
-     *
-     * @param string $transaction_id The transaction id
-     * @return stdClass An object containing the transaction details
-     */
-    public function getTransaction($transaction_id)
-    {
-        return $this->apiRequest('/locations/' . $this->location_id . '/transactions/' . $transaction_id);
-    }
-
-    /**
-     * Retrieves details for a order.
+     * Retrieves details for an order.
      *
      * @param string $order_id The order id
      * @return stdClass An object containing the order details
      */
     public function getOrder($order_id)
     {
-        $params = [
-            'order_ids' => [
-                $order_id
-            ]
-        ];
-        $response = $this->apiRequest('/locations/' . $this->location_id . '/orders/batch-retrieve', $params, 'POST');
+        $response = $this->apiRequest('/orders/' . $order_id);
 
-        return isset($response->orders[0]) ? $response->orders[0] : $response;
+        return isset($response->order) ? $response->order : $response;
+    }
+
+    /**
+     * Retrieves details for a payment.
+     *
+     * @param string $payment_id The payment id
+     * @return stdClass An object containing the payment details
+     */
+    public function getPayment($payment_id)
+    {
+        $response = $this->apiRequest('/payments/' . $payment_id);
+
+        return isset($response->payment) ? $response->payment : $response;
     }
 }
