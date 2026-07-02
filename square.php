@@ -109,7 +109,7 @@ class Square extends NonmerchantGateway
      */
     public function encryptableFields()
     {
-        return ['application_id', 'access_token', 'location_id'];
+        return ['application_id', 'access_token', 'location_id', 'webhook_signature_key'];
     }
 
     /**
@@ -267,6 +267,14 @@ class Square extends NonmerchantGateway
         Loader::load(dirname(__FILE__) . DS . 'lib' . DS . 'square_api.php');
         $api = new SquareApi($this->meta['application_id'], $this->meta['access_token'], $this->meta['location_id']);
 
+        // If a webhook signature key is configured and this request carries a signed
+        // Square webhook payload, verify it via the Payments API instead. This is fully
+        // optional: installations that never subscribe a webhook in Square's dashboard
+        // never take this branch and keep using the redirect-based verification below.
+        if (!empty($this->meta['webhook_signature_key']) && $this->isWebhookRequest()) {
+            return $this->validateWebhook($api);
+        }
+
         // Get invoices
         $invoices = (isset($get['referenceId']) ? $get['referenceId'] : null);
 
@@ -364,6 +372,148 @@ class Square extends NonmerchantGateway
         }
 
         return ['status' => $status, 'amount' => $amount, 'currency' => $currency];
+    }
+
+    /**
+     * Determines whether the current request carries a Square webhook payload.
+     *
+     * @return bool True if the request includes Square's webhook signature header
+     */
+    private function isWebhookRequest()
+    {
+        return isset($_SERVER['HTTP_X_SQUARE_HMACSHA256_SIGNATURE']);
+    }
+
+    /**
+     * Verifies that the given raw request body was signed by Square using the
+     * configured webhook signature key.
+     *
+     * @param string $payload The raw request body
+     * @return bool True if the signature is valid
+     */
+    private function verifyWebhookSignature($payload)
+    {
+        $signature = $_SERVER['HTTP_X_SQUARE_HMACSHA256_SIGNATURE'] ?? '';
+
+        if (empty($signature) || empty($this->meta['webhook_signature_key'])) {
+            return false;
+        }
+
+        // Must exactly match the notification URL subscribed in Square's dashboard
+        $notification_url = Configure::get('Blesta.gw_callback_url')
+            . Configure::get('Blesta.company_id')
+            . '/square/';
+
+        $hash = base64_encode(
+            hash_hmac('sha256', $notification_url . $payload, $this->meta['webhook_signature_key'], true)
+        );
+
+        return hash_equals($hash, $signature);
+    }
+
+    /**
+     * Validates a Square webhook notification and returns the resulting transaction data.
+     * Used as an alternative to the redirect-based verification in validate(), so that
+     * payments are recorded even if the customer's browser never returns to Blesta.
+     *
+     * @param SquareApi $api The Square API instance
+     * @return array|null An array of transaction data, or null if the payload could not be verified
+     */
+    private function validateWebhook($api)
+    {
+        $payload = file_get_contents('php://input');
+
+        if (!$this->verifyWebhookSignature($payload)) {
+            $this->log('webhook', $payload, 'input', false);
+            $this->Input->setErrors([
+                'webhook' => ['signature' => Language::_('Square.!error.webhook.signature', true)]
+            ]);
+
+            return;
+        }
+
+        $webhook = json_decode($payload);
+        $this->log('webhook', $payload, 'input', isset($webhook->type));
+
+        // Only payment events are actionable here; other subscribed events (e.g. order.updated)
+        // are acknowledged and ignored
+        $events = ['payment.created', 'payment.updated'];
+        if (!in_array($webhook->type ?? '', $events)) {
+            return;
+        }
+
+        // The webhook payload already carries the full, current payment object, so there's
+        // no need to look it back up through the Payments API. Its authenticity is already
+        // established by the signature check above.
+        $payment = $webhook->data->object->payment ?? null;
+
+        if (!isset($payment) || empty($payment->order_id)) {
+            $this->Input->setErrors([
+                'webhook' => ['payment' => Language::_('Square.!error.webhook.payment', true)]
+            ]);
+
+            return;
+        }
+
+        $order = $api->getOrder($payment->order_id);
+        if (!isset($order) || isset($order->errors) || !isset($order->total_money)) {
+            $this->Input->setErrors([
+                'webhook' => ['order' => Language::_('Square.!error.webhook.order', true)]
+            ]);
+
+            return;
+        }
+
+        $invoices = $this->unserializeInvoices($order->reference_id ?? '');
+
+        $status = 'error';
+        $payment_status = $payment->status ?? ($payment->card_details->status ?? null);
+        switch ($payment_status) {
+            case 'COMPLETED':
+            case 'CAPTURED':
+                $status = 'approved';
+                break;
+            case 'FAILED':
+                $status = 'declined';
+                break;
+            case 'CANCELED':
+            case 'VOIDED':
+                $status = 'void';
+                break;
+            case 'APPROVED':
+            case 'AUTHORIZED':
+                $status = 'pending';
+                break;
+        }
+
+        return [
+            'client_id' => $this->getClientIdFromInvoices($invoices),
+            'amount' => number_format(($order->total_money->amount / 100), 2, '.', ''),
+            'currency' => (isset($order->total_money->currency) ? $order->total_money->currency : null),
+            'status' => $status,
+            'reference_id' => null,
+            'transaction_id' => $payment->order_id,
+            'invoices' => $invoices
+        ];
+    }
+
+    /**
+     * Determines the client ID that owns the first invoice in the given list. Used by the
+     * webhook path, where (unlike the redirect path) no client_id query parameter is available.
+     *
+     * @param array $invoices An array of invoices as returned by unserializeInvoices()
+     * @return int|null The client ID, or null if it could not be determined
+     */
+    private function getClientIdFromInvoices(array $invoices)
+    {
+        if (empty($invoices[0]['id'])) {
+            return null;
+        }
+
+        Loader::loadModels($this, ['Invoices']);
+        $invoice = $this->Invoices->get($invoices[0]['id']);
+
+        return isset($invoice->client_id) ? $invoice->client_id : null;
     }
 
     /**
